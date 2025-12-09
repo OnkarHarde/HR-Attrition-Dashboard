@@ -1,0 +1,14 @@
+# requirements.txt
+# Working dependency versions for HR Attrition Streamlit app (Windows compatible)
+
+streamlit
+pandas
+numpy
+scikit-learn
+plotly
+shap
+lifelines
+joblib
+imbalanced-learn
+matplotlib
+python-dateutil
