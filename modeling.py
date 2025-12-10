@@ -61,7 +61,6 @@ def build_column_transformer(
     numeric_cols=DEFAULT_NUMERIC,
     categorical_cols=DEFAULT_CATEGORICAL,
 ) -> ColumnTransformer:
-    """Create ColumnTransformer with numeric and categorical pipelines."""
 
     num_pipeline = Pipeline([
         ("imputer", SimpleImputer(strategy="median")),
@@ -92,8 +91,6 @@ def build_pipeline_and_model(
     random_state=42,
     class_weight=None,
 ) -> Tuple[Pipeline, Any]:
-
-    """Return preprocessing pipeline and initialized model."""
 
     if numeric_cols is None:
         numeric_cols = DEFAULT_NUMERIC
@@ -136,8 +133,12 @@ def train_model(
     handle_imbalance="None",
     random_state=42,
     test_size=0.2,
+    return_train_df=False,
 ):
-    """Train model pipeline and return pipeline, fitted model, X_test, y_test."""
+    """
+    Train model pipeline and return:
+    pipeline, model, X_test, y_test, (optional) train_df
+    """
 
     df = df.copy()
 
@@ -172,14 +173,20 @@ def train_model(
         stratify=y,
     )
 
-    # Handle imbalance
+    # Train
     if handle_imbalance == "SMOTE":
-        X_train_proc = pipeline.named_steps["preprocessor"].fit_transform(X_train)
+        X_train_processed = pipeline.named_steps["preprocessor"].fit_transform(X_train)
         sm = SMOTE(random_state=random_state)
-        X_resampled, y_resampled = sm.fit_resample(X_train_proc, y_train)
+        X_resampled, y_resampled = sm.fit_resample(X_train_processed, y_train)
         pipeline.named_steps["model"].fit(X_resampled, y_resampled)
     else:
         pipeline.fit(X_train, y_train)
+
+    # Optional: return training df for SHAP background
+    train_df = df.loc[X_train.index]
+
+    if return_train_df:
+        return pipeline, pipeline.named_steps["model"], X_test, y_test, train_df
 
     return pipeline, pipeline.named_steps["model"], X_test, y_test
 
@@ -190,7 +197,6 @@ def train_model(
 # -----------------
 
 def preprocess_input_df(df: pd.DataFrame, pipeline: Pipeline) -> pd.DataFrame:
-    """Apply preprocessing steps from pipeline to new data."""
 
     return pd.DataFrame(
         pipeline.named_steps["preprocessor"].transform(df),
@@ -204,7 +210,6 @@ def preprocess_input_df(df: pd.DataFrame, pipeline: Pipeline) -> pd.DataFrame:
 # -----------------
 
 def evaluate_model(model, pipeline, X_test, y_test) -> Dict[str, Any]:
-    """Compute metrics, confusion matrix, and feature importance."""
 
     X_proc = pd.DataFrame(
         pipeline.named_steps["preprocessor"].transform(X_test),
@@ -225,7 +230,7 @@ def evaluate_model(model, pipeline, X_test, y_test) -> Dict[str, Any]:
         ),
     }
 
-    # Confusion Matrix Plot
+    # Confusion Matrix Figure
     cm = confusion_matrix(y_test, y_pred)
     fig_cm = go.Figure(
         data=go.Heatmap(
@@ -243,7 +248,7 @@ def evaluate_model(model, pipeline, X_test, y_test) -> Dict[str, Any]:
     )
     metrics["confusion_matrix_fig"] = fig_cm
 
-    # Feature Importance
+    # Feature Importance Figure
     fi_fig = None
 
     if hasattr(model, "feature_importances_"):
@@ -274,11 +279,9 @@ def evaluate_model(model, pipeline, X_test, y_test) -> Dict[str, Any]:
 # -----------------
 
 def save_model(pipeline: Pipeline, model: Any, filepath: str):
-    """Save pipeline + model as a single pickle file."""
     joblib.dump({"pipeline": pipeline, "model": model}, filepath)
     return filepath
 
 
 def load_model(filepath: str):
-    """Load saved pipeline + model."""
     return joblib.load(filepath)
