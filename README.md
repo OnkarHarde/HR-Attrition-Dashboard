@@ -3,7 +3,7 @@
 ## Problem Statement
 Employee attrition is a critical challenge for organizations, leading to increased recruitment costs, loss of talent, and reduced productivity. This project aims to predict which employees are at risk of leaving and provide actionable insights for HR teams using historical employee data.
 
----
+---Streamlit app URL:https://hr-attrition-dashboard-h2p3.streamlit.app/
 
 ## What We Did
 - Built a **Streamlit dashboard** to explore, analyze, and predict employee attrition.
@@ -102,3 +102,4 @@ Load a saved .pkl model via the sidebar to perform predictions without retrainin
 SQL Integration
 
 Example SQL snippet is provided at the bottom of the app for inserting predictions into a database.
+
